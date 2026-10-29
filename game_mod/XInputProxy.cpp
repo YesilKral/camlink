@@ -1,6 +1,5 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <Xinput.h>
 #include <strsafe.h>
 
 #include "CamLinkFreeCam.h"
@@ -11,6 +10,55 @@
 #include <cstdint>
 #include <cwchar>
 #include <mutex>
+
+// Private ABI-compatible XInput declarations. The current Windows SDK marks
+// its public XInput prototypes with exception annotations that conflict with
+// defining a proxy export under the same name, so this proxy intentionally
+// does not include Xinput.h.
+struct XINPUT_GAMEPAD {
+    WORD wButtons;
+    BYTE bLeftTrigger;
+    BYTE bRightTrigger;
+    SHORT sThumbLX;
+    SHORT sThumbLY;
+    SHORT sThumbRX;
+    SHORT sThumbRY;
+};
+struct XINPUT_STATE {
+    DWORD dwPacketNumber;
+    XINPUT_GAMEPAD Gamepad;
+};
+struct XINPUT_VIBRATION {
+    WORD wLeftMotorSpeed;
+    WORD wRightMotorSpeed;
+};
+struct XINPUT_CAPABILITIES {
+    BYTE Type;
+    BYTE SubType;
+    WORD Flags;
+    XINPUT_GAMEPAD Gamepad;
+    XINPUT_VIBRATION Vibration;
+};
+struct XINPUT_BATTERY_INFORMATION {
+    BYTE BatteryType;
+    BYTE BatteryLevel;
+};
+struct XINPUT_KEYSTROKE {
+    WORD VirtualKey;
+    WCHAR Unicode;
+    WORD Flags;
+    BYTE UserIndex;
+    BYTE HidCode;
+};
+using PXINPUT_KEYSTROKE = XINPUT_KEYSTROKE*;
+static_assert(sizeof(XINPUT_GAMEPAD) == 12, "XInput gamepad ABI mismatch");
+static_assert(sizeof(XINPUT_STATE) == 16, "XInput state ABI mismatch");
+static_assert(sizeof(XINPUT_CAPABILITIES) == 20, "XInput capabilities ABI mismatch");
+
+constexpr BYTE CAMLINK_XINPUT_DEVTYPE_GAMEPAD = 0x01;
+constexpr BYTE CAMLINK_XINPUT_DEVSUBTYPE_GAMEPAD = 0x01;
+constexpr WORD CAMLINK_XINPUT_DPAD_UP = 0x0001;
+constexpr WORD CAMLINK_XINPUT_DPAD_DOWN = 0x0002;
 
 // In-process XInput proxy for FH6's native Drone Mode. It reads CamLink's
 // loopback pose stream and returns those axes directly from XInputGetState;
@@ -147,12 +195,12 @@ void MakePhoneState(XINPUT_STATE* state, const CamLinkFreeCamPose& pose, ULONGLO
     // Open FH6's ANNA menu, then select its native Drone Mode (D-pad down/up).
     const ULONGLONG entry_age = now - g_drone_entry_ms;
     if (entry_age < 120) {
-        pad.wButtons = XINPUT_GAMEPAD_DPAD_DOWN;
+        pad.wButtons = CAMLINK_XINPUT_DPAD_DOWN;
         return;
     }
     if (entry_age < 240) return;
     if (entry_age < 360) {
-        pad.wButtons = XINPUT_GAMEPAD_DPAD_UP;
+        pad.wButtons = CAMLINK_XINPUT_DPAD_UP;
         return;
     }
 
@@ -229,8 +277,8 @@ extern "C" DWORD WINAPI XInputGetCapabilities(DWORD user, DWORD flags, XINPUT_CA
     // Advertise slot 0 so FH6 keeps polling XInput even when no physical
     // controller is attached and the phone is connected later.
     ZeroMemory(caps, sizeof(*caps));
-    caps->Type = XINPUT_DEVTYPE_GAMEPAD;
-    caps->SubType = XINPUT_DEVSUBTYPE_GAMEPAD;
+    caps->Type = CAMLINK_XINPUT_DEVTYPE_GAMEPAD;
+    caps->SubType = CAMLINK_XINPUT_DEVSUBTYPE_GAMEPAD;
     return ERROR_SUCCESS;
 }
 
