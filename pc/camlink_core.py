@@ -154,6 +154,8 @@ class Rig:
         self.rc_seen = None
         self.ref_pos = [0.0, 0.0, 0.0]
         self.ref_yaw = 0.0
+        self.ref_pitch = 0.0
+        self.ref_roll = 0.0
         self.offset = [0.0, 0.0, 0.0]
         self.last_t = None
         self.f_pos = [OneEuro() for _ in range(3)]
@@ -183,6 +185,8 @@ class Rig:
             self.recenter_flag = False
             self.ref_pos = [p[0], p[1], p[2]]
             self.ref_yaw = yaw
+            self.ref_pitch = pitch
+            self.ref_roll = roll
             self.offset = [0.0, 0.0, 0.0]
             self._reset_filters()
             self.last_t = None
@@ -228,8 +232,8 @@ class Rig:
         ang_min = 0.6 + 8.0 * (1.0 - s)
         pos_f = [self.f_pos[i](pos[i], dt, pos_min, 8.0) for i in range(3)]
         yaw_f = self.f_ang[0](self.yaw_unwrapped, dt, ang_min, 0.05)
-        pitch_f = self.f_ang[1](pitch, dt, ang_min, 0.05)
-        roll_f = self.f_ang[2](roll, dt, ang_min, 0.05)
+        pitch_f = self.f_ang[1](wrap180(pitch - self.ref_pitch), dt, ang_min, 0.05)
+        roll_f = self.f_ang[2](wrap180(roll - self.ref_roll), dt, ang_min, 0.05)
 
         return {
             "t": now,

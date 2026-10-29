@@ -74,6 +74,10 @@ def run_gui(server, cfg, ips):
     status.pack(anchor="w")
     readout = tk.Label(left, text="", bg=bg, fg=fg, font=("Consolas", 11), justify="left")
     readout.pack(anchor="w", pady=(4, 8))
+    game_status = tk.Label(left, text="FH6 kancası: oyunun XInput DLL'ini bekliyor",
+                           bg=bg, fg="#d29922",
+                           font=("Segoe UI", 10, "bold"), wraplength=420, justify="left")
+    game_status.pack(anchor="w", pady=(0, 6))
 
     canvas = tk.Canvas(left, width=380, height=330, bg="#0d0f12", highlightthickness=0)
     canvas.pack(anchor="w")
@@ -144,6 +148,15 @@ def run_gui(server, cfg, ips):
                 status.config(text="Telefon denedi ama KOD yanlış!", fg="#f0883e")
             else:
                 status.config(text="Telefon bekleniyor… (aynı Wi-Fi, IP ve kod doğru mu?)", fg="#ff7b72")
+        if server.is_connected() and p and p.get("mode") == "free":
+            game_status.config(text="FH6 kancası: FREECAM verisi hazır · Forza penceresini öne al",
+                               fg="#56d364")
+        elif server.is_connected():
+            game_status.config(text="FH6 kancası: telefonda FREECAM seç",
+                               fg="#d29922")
+        else:
+            game_status.config(text="FH6 kancası: oyunun XInput DLL'ini bekliyor",
+                               fg="#d29922")
         root.after(33, draw)
 
     def on_close():
@@ -176,7 +189,6 @@ def main():
         return
     server.start()
     ips = core.local_ips()
-
     try:
         if args.no_gui:
             run_console(server, cfg, ips)
