@@ -1,0 +1,39 @@
+name: Build CamLink FreeCam (Windows)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "game_mod/**"
+      - ".github/workflows/build-freecam.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Configure x64 Release build
+        run: cmake -S game_mod -B build/game_mod -A x64
+
+      - name: Build DLLs
+        run: cmake --build build/game_mod --config Release --parallel
+
+      - name: Package binaries and source notes
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifact -Force | Out-Null
+          Copy-Item build/game_mod/Release/CamLinkFreeCam.dll artifact/
+          Copy-Item build/game_mod/Release/xinput1_3.dll artifact/
+          Copy-Item game_mod/README.md artifact/README.md
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CamLinkFreeCam-Windows-x64
+          path: artifact/*
+          if-no-files-found: error
