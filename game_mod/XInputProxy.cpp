@@ -147,9 +147,11 @@ DWORD WINAPI LoadCamLinkModule(void*) {
 bool GameIsForeground() {
     const HWND hwnd = GetForegroundWindow();
     if (!hwnd) return false;
-    wchar_t title[256]{};
-    if (!GetWindowTextW(hwnd, title, 256)) return false;
-    return wcsstr(title, L"Forza Horizon 6") != nullptr;
+    DWORD foreground_pid = 0;
+    GetWindowThreadProcessId(hwnd, &foreground_pid);
+    // The game may have a localized, empty, or version-dependent title. Since
+    // this DLL runs inside FH6, process identity is the reliable focus check.
+    return foreground_pid == GetCurrentProcessId();
 }
 
 double Clamp(double value, double lo, double hi) {
