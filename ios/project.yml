@@ -1,0 +1,25 @@
+name: CamLink
+options:
+  bundleIdPrefix: com.camlink.personal
+  deploymentTarget:
+    iOS: "16.0"
+targets:
+  CamLink:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.camlink.personal.app
+        PRODUCT_NAME: CamLink
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: CamLink
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_NSCameraUsageDescription: "Telefonun konumunu takip etmek (ARKit) icin kamera gerekir. Goruntu kaydedilmez ve gonderilmez."
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: "Telefon hareketini ayni agdaki bilgisayarina gondermek icin yerel ag erisimi gerekir."
