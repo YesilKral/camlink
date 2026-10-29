@@ -1,0 +1,46 @@
+name: iPhone uygulamasini derle
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: XcodeGen kur
+        run: brew install xcodegen
+
+      - name: Xcode projesini olustur
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Derle (imzasiz)
+        working-directory: ios
+        run: |
+          xcodebuild \
+            -project CamLink.xcodeproj \
+            -scheme CamLink \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: IPA paketle
+        working-directory: ios
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/CamLink.app Payload/
+          zip -qry CamLink.ipa Payload
+
+      - name: IPA dosyasini yukle
+        uses: actions/upload-artifact@v4
+        with:
+          name: CamLink-ipa
+          path: ios/CamLink.ipa
