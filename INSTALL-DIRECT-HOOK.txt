@@ -1,0 +1,11 @@
+CamLink FH6 Direct Phone Hook — source patch
+
+This archive contains source code, not compiled DLLs.
+
+To build it on GitHub:
+1. Extract the archive into the ROOT of the existing CamLink repository, merging folders and replacing only same-named files.
+2. In GitHub open Actions → Build CamLink FreeCam (Windows) → Run workflow.
+3. When the run succeeds, download the CamLinkFreeCam-Windows-x64 artifact.
+4. Its two DLLs must be tested together beside the FH6 executable. Do not copy source files into the game folder.
+
+This project does not create a Windows virtual gamepad and does not require vgamepad/ViGEmBus. The in-process XInput hook feeds the phone pose to FH6's native Drone Mode input path. It is not a camera-memory transform API, and Drone Mode itself still replaces ordinary driving controls.
