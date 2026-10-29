@@ -12,16 +12,18 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import camlink_core as core  # noqa: E402
+from camlink_drone import DroneBridge  # noqa: E402
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "camlink_config.json")
 
 
-def run_console(server, cfg, ips):
+def run_console(server, cfg, ips, drone):
     print("=" * 56)
     print(" CamLink PC")
     print(" Telefona gir ->  IP  :", " veya ".join(ips))
     print("                  Kod :", cfg["code"])
     print(" Port:", server.port, " | Poz çıkışı: 127.0.0.1:%d" % server.out_addr[1])
+    print(" Oyun kontrolü:", "telefondan sanal Xbox girdisi")
     print(" Çıkmak için Ctrl+C")
     print("=" * 56)
     try:
@@ -29,9 +31,9 @@ def run_console(server, cfg, ips):
             time.sleep(1.0)
             p = server.last_pose
             if server.is_connected() and p:
-                print("\r[bağlı %3.0f Hz] x=%+.2f y=%+.2f z=%+.2f  yaw=%+6.1f pitch=%+6.1f roll=%+6.1f  %s   "
-                      % (server.rate, p["pos"][0], p["pos"][1], p["pos"][2],
-                         p["yaw"], p["pitch"], p["roll"], p["tracking"]), end="")
+                print("\r[bağlı %3.0f Hz] %s | x=%+.2f y=%+.2f z=%+.2f yaw=%+6.1f pitch=%+6.1f roll=%+6.1f   "
+                      % (server.rate, drone.status, p["pos"][0], p["pos"][1],
+                         p["pos"][2], p["yaw"], p["pitch"], p["roll"]), end="")
             elif time.time() - server.bad_code_seen < 3:
                 print("\r[!] Telefon bağlanmayı denedi ama KOD yanlış.                         ", end="")
             else:
@@ -40,7 +42,7 @@ def run_console(server, cfg, ips):
         print()
 
 
-def run_gui(server, cfg, ips):
+def run_gui(server, cfg, ips, drone):
     import tkinter as tk
     from tkinter import ttk
 
@@ -74,7 +76,7 @@ def run_gui(server, cfg, ips):
     status.pack(anchor="w")
     readout = tk.Label(left, text="", bg=bg, fg=fg, font=("Consolas", 11), justify="left")
     readout.pack(anchor="w", pady=(4, 8))
-    game_status = tk.Label(left, text="Oyun kancası: CamLink verisi 127.0.0.1:9051 adresine gönderilir",
+    game_status = tk.Label(left, text=drone.status,
                            bg=bg, fg="#d29922",
                            font=("Segoe UI", 10, "bold"), wraplength=420, justify="left")
     game_status.pack(anchor="w", pady=(0, 6))
@@ -148,15 +150,8 @@ def run_gui(server, cfg, ips):
                 status.config(text="Telefon denedi ama KOD yanlış!", fg="#f0883e")
             else:
                 status.config(text="Telefon bekleniyor… (aynı Wi-Fi, IP ve kod doğru mu?)", fg="#ff7b72")
-        if server.is_connected() and p and p.get("mode") == "free":
-            game_status.config(text="FREECAM verisi gönderiliyor · 127.0.0.1:9051",
-                               fg="#56d364")
-        elif server.is_connected():
-            game_status.config(text="Oyuna kamera verisi için telefonda FREECAM seç",
-                               fg="#d29922")
-        else:
-            game_status.config(text="Oyun kancası: CamLink verisi 127.0.0.1:9051 adresine gönderilir",
-                               fg="#d29922")
+        game_status.config(text=drone.status,
+                           fg="#56d364" if "etkin" in drone.status else "#d29922")
         root.after(33, draw)
 
     def on_close():
@@ -188,17 +183,20 @@ def main():
         input("Kapatmak için Enter'a bas…")
         return
     server.start()
+    drone = DroneBridge(server, cfg)
+    drone.start()
     ips = core.local_ips()
     try:
         if args.no_gui:
-            run_console(server, cfg, ips)
+            run_console(server, cfg, ips, drone)
         else:
             try:
-                run_gui(server, cfg, ips)
+                run_gui(server, cfg, ips, drone)
             except ImportError:
                 print("Pencere (tkinter) bulunamadı, konsol moduna geçiliyor.")
-                run_console(server, cfg, ips)
+                run_console(server, cfg, ips, drone)
     finally:
+        drone.stop()
         core.save_config(CONFIG_PATH, cfg)
         server.stop()
 
